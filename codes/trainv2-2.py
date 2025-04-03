@@ -147,7 +147,7 @@ def main():
     train_df = df.sample(frac=0.8, random_state=42)
     test_df = df.drop(train_df.index)
 
-    tokenizer = Wav2Vec2CTCTokenizer(vocab_file="/content/vocab.json", word_delimiter_token=" ")
+    tokenizer = Wav2Vec2CTCTokenizer(vocab_file="/content/hcm-ethi/vocab.json", word_delimiter_token=" ")
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(args.base_model)
     processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
     model = Wav2Vec2ForCTC.from_pretrained(args.base_model, vocab_size=tokenizer.vocab_size)
