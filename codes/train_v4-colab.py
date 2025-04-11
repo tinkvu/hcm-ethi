@@ -158,6 +158,7 @@ def compute_metrics(pred: "EvalPrediction", tokenizer: Wav2Vec2CTCTokenizer):
     label_str = tokenizer.batch_decode(pred.label_ids, group_tokens=False)
     wer = wer_metric.compute(predictions=pred_str, references=label_str)
     cer = cer_metric.compute(predictions=pred_str, references=label_str)
+    print(f"* wer: {wer}, cer: {cer}")
     return {"wer": wer, "cer": cer}
 
 def save_everything(model, processor, output_dir):
@@ -232,10 +233,14 @@ def main():
     train_df = df.sample(frac=0.8, random_state=42)
     test_df = df.drop(train_df.index)
 
-    tokenizer = Wav2Vec2CTCTokenizer(vocab_file="/content/vocab.json", word_delimiter_token="|")
+    tokenizer = Wav2Vec2CTCTokenizer(vocab_file="/content/vocab-1.json", word_delimiter_token="|")
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(args.base_model)
     processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
-    model = Wav2Vec2ForCTC.from_pretrained(args.base_model, vocab_size=tokenizer.vocab_size)
+    model = Wav2Vec2ForCTC.from_pretrained(
+    args.base_model,
+    vocab_size=tokenizer.vocab_size,
+    ignore_mismatched_sizes=True)
+
 
     train_dataset = ReadSpeechDataset(train_df, do_awgn=args.do_awgn, do_masking=args.do_masking)
     eval_dataset = ReadSpeechDataset(test_df)
@@ -263,7 +268,7 @@ def main():
 
     trainer = Trainer(
         model=model,
-        args=TrainingArguments(output_dir=args.output_dir,per_device_train_batch_size=1,gradient_accumulation_steps=8,fp16=True,per_device_eval_batch_size=1 if args.eval_batch_size is None else args.eval_batch_size, gradient_checkpointing=args.gradient_checkpointing),
+        args=TrainingArguments(output_dir=args.output_dir,num_train_epochs=5,per_device_train_batch_size=1,gradient_accumulation_steps=8,fp16=True,per_device_eval_batch_size=1 if args.eval_batch_size is None else args.eval_batch_size, gradient_checkpointing=args.gradient_checkpointing),
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         data_collator=DataCollatorWav2Vec2(processor),
